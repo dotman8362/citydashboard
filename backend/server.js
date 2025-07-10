@@ -84,20 +84,16 @@ app.get('/api/crypto', async (req, res) => {
 
 app.get('/api/news', async (req, res) => {
   const city = req.query.city;
-  const news_Key = process.env.NEWS_API_KEY;
-
-  if (!city) {
-    return res.status(400).json({ error: 'City is required' });
-  }
+  if (!city) return res.status(400).json({ error: 'City is required' });
 
   try {
-    const response = await axios.get('https://newsapi.org/v2/everything', {
+    const response = await axios.get('https://gnews.io/api/v4/search', {
       params: {
         q: city,
-        apiKey: news_Key,
-        pageSize: 5,
-        sortBy: 'publishedAt',
-        language: 'en'
+        lang: 'en',
+        country: 'ng',
+        max: 5,
+        token: process.env.GNEWS_API_KEY
       }
     });
 
@@ -110,10 +106,13 @@ app.get('/api/news', async (req, res) => {
 
     res.json({ city, articles });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Unable to fetch news' });
+    console.error('GNews API error:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      error: err.response?.data?.message || 'Unable to fetch news'
+    });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
