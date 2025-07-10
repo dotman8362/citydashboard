@@ -54,9 +54,19 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
+let cachedCrypto = null;
+let lastFetchTime = 0;
+
 app.get('/api/crypto', async (req, res) => {
+  const now = Date.now();
+  const cacheDuration = 5 * 60 * 1000; // 5 minutes
+
+  if (cachedCrypto && (now - lastFetchTime < cacheDuration)) {
+    return res.json(cachedCrypto);
+  }
+
   try {
-    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
+    const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
       params: {
         vs_currency: 'ngn',
         order: 'market_cap_desc',
@@ -66,25 +76,39 @@ app.get('/api/crypto', async (req, res) => {
       }
     });
 
-    const coins = response.data.map(coin => ({
+    cachedCrypto = response.data.map(coin => ({
       name: coin.name,
       symbol: coin.symbol.toUpperCase(),
-      current_price: coin.current_price,
+      price: coin.current_price,
       image: coin.image,
-      market_cap_rank: coin.market_cap_rank
+      rank: coin.market_cap_rank
     }));
 
-    res.json(coins);
+    lastFetchTime = now;
+    res.json(cachedCrypto);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Unable to fetch crypto data' });
+    console.error('CoinGecko API error:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      error: err.response?.data?.error || 'Unable to fetch crypto data'
+    });
   }
 });
 
 
+// Simple in-memory cache
+let cachedNews = {};
+let lastNewsFetched = {};
+
 app.get('/api/news', async (req, res) => {
-  const city = req.query.city;
+  const city = req.query.city?.toLowerCase();
   if (!city) return res.status(400).json({ error: 'City is required' });
+
+  const now = Date.now();
+  const cacheDuration = 5 * 60 * 1000; // 5 minutes
+
+  if (cachedNews[city] && (now - lastNewsFetched[city] < cacheDuration)) {
+    return res.json({ city, articles: cachedNews[city] });
+  }
 
   try {
     const response = await axios.get('https://gnews.io/api/v4/search', {
@@ -103,6 +127,9 @@ app.get('/api/news', async (req, res) => {
       source: article.source.name,
       publishedAt: article.publishedAt
     }));
+
+    cachedNews[city] = articles;
+    lastNewsFetched[city] = now;
 
     res.json({ city, articles });
   } catch (err) {
