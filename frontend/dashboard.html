@@ -31,7 +31,7 @@
   <!-- Crypto Chart -->
   <div class="bg-white rounded-xl p-4 shadow-md mt-6">
     <h2 class="text-xl font-semibold mb-4">💰 Top 10 Cryptos in NGN</h2>
-    <canvas id="cryptoChart" class="w-full max-w-5xl mx-auto"></canvas>
+  <ul id="crypto-list" class="mt-4 space-y-3"></ul>
   </div>
 
   <script>
@@ -75,49 +75,28 @@
       });
 
     // Crypto Chart
-    fetch('/api/crypto')
-      .then(res => res.json())
-      .then(data => {
-        const ctx = document.getElementById('cryptoChart').getContext('2d');
-        const labels = data.map(coin => `${coin.name} (${coin.symbol})`);
-        const prices = data.map(coin => coin.current_price);
+   fetch('/api/crypto')
+    .then(res => res.json())
+    .then(coins => {
+      const list = document.getElementById('crypto-list');
+      list.innerHTML = '';
 
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Price (₦)',
-              data: prices,
-              backgroundColor: 'rgba(16, 185, 129, 0.6)', // Tailwind green-500
-              borderColor: 'rgba(5, 150, 105, 1)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  callback: value => '₦' + value.toLocaleString()
-                }
-              }
-            },
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  label: context => `₦${context.parsed.y.toLocaleString()}`
-                }
-              }
-            }
-          }
-        });
-      }).catch(() => {
-        document.getElementById('cryptoChart').replaceWith(
-          `<p class="text-red-500 text-center">Unable to load crypto data.</p>`
-        );
+      coins.forEach(coin => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="flex items-center space-x-4">
+            <img src="${coin.image}" alt="${coin.name}" class="w-6 h-6" />
+            <span class="font-medium">${coin.name} (${coin.symbol})</span>
+            <span class="ml-auto text-green-600">₦${coin.current_price.toLocaleString()}</span>
+          </div>
+        `;
+        list.appendChild(li);
       });
+    })
+    .catch(err => {
+      console.error('Failed to fetch crypto data:', err);
+      document.getElementById('crypto-list').innerHTML = `<li class="text-red-500">Unable to load crypto prices.</li>`;
+    });
   </script>
 </body>
 </html>
