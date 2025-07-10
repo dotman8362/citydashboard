@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Search City | SmartPulse</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+
+  <div class="bg-white p-8 rounded-2xl shadow-md max-w-md w-full">
+    <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Search Your City</h1>
+    
+    <form id="search-form" class="flex items-center gap-2">
+      <input
+        type="text"
+        id="city-input"
+        placeholder="Enter city name"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+        required
+      />
+      <button
+        type="submit"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+      >
+        Search
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-gray-700">
+    <h1>MADE BY ADEDOTUN IDOWU</h1>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('search-form');
+    const cityInput = document.getElementById('city-input');
+
+
+   form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const city = cityInput.value.trim();
+
+  // Save to localStorage
+  localStorage.setItem('selectedCity', city);
+
+  // Redirect to dashboard
+  window.location.href = 'dashboard.html';
+});
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart City Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="p-6">
+  <h1 class="text-3xl font-bold mb-6 text-center">Smart City Real-Time Dashboard</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Weather Widget -->
+    <div class="bg-white rounded-xl p-4 shadow-md">
+      <h2 class="text-xl font-semibold mb-2">🌤️ Weather</h2>
+      <div id="weather-info" class="text-gray-700 space-y-1">
+        <p>Loading weather...</p>
+      </div>
+    </div>
+
+    <!-- News Widget -->
+    <div class="bg-white rounded-xl p-4 shadow-md">
+      <h2 class="text-xl font-semibold mb-2">📰 Local News</h2>
+      <ul id="news-list" class="space-y-2 text-sm text-gray-700">
+        <li>Loading news...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Crypto Chart -->
+  <div class="bg-white rounded-xl p-4 shadow-md mt-6">
+    <h2 class="text-xl font-semibold mb-4">💰 Top 10 Cryptos in NGN</h2>
+    <canvas id="cryptoChart" class="w-full max-w-5xl mx-auto"></canvas>
+  </div>
+
+  <script>
+    // CITY from localStorage or default
+    const city = localStorage.getItem('selectedCity') || 'Lagos';
+
+    // Weather Fetch
+    fetch(`/api/weather?city=${encodeURIComponent(city)}`)
+      .then(res => res.json())
+      .then(data => {
+        const weather = document.getElementById('weather-info');
+        weather.innerHTML = `
+          <p><strong>City:</strong> ${data.city}, ${data.country}</p>
+          <p><strong>Temp:</strong> ${data.temp}°C</p>
+          <p><strong>Condition:</strong> ${data.condition}</p>
+          <img src="${data.icon}" alt="${data.condition}" class="w-12 mt-2">
+          <p class="text-sm text-gray-500">Updated at ${data.local_time}</p>
+        `;
+      }).catch(() => {
+        document.getElementById('weather-info').innerText = 'Unable to load weather.';
+      });
+
+    // News Fetch
+    fetch(`/api/news?city=${encodeURIComponent(city)}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('news-list');
+        list.innerHTML = '';
+        data.articles.forEach(article => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <a href="${article.url}" target="_blank" class="text-blue-600 hover:underline">
+              ${article.title}
+            </a>
+            <p class="text-gray-500 text-xs">${article.source} • ${new Date(article.publishedAt).toLocaleString()}</p>
+          `;
+          list.appendChild(li);
+        });
+      }).catch(() => {
+        document.getElementById('news-list').innerHTML = '<li class="text-red-500">Failed to load news.</li>';
+      });
+
+    // Crypto Chart
+    fetch('/api/crypto')
+      .then(res => res.json())
+      .then(data => {
+        const ctx = document.getElementById('cryptoChart').getContext('2d');
+        const labels = data.map(coin => `${coin.name} (${coin.symbol})`);
+        const prices = data.map(coin => coin.current_price);
+
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Price (₦)',
+              data: prices,
+              backgroundColor: 'rgba(16, 185, 129, 0.6)', // Tailwind green-500
+              borderColor: 'rgba(5, 150, 105, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: value => '₦' + value.toLocaleString()
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => `₦${context.parsed.y.toLocaleString()}`
+                }
+              }
+            }
+          }
+        });
+      }).catch(() => {
+        document.getElementById('cryptoChart').replaceWith(
+          `<p class="text-red-500 text-center">Unable to load crypto data.</p>`
+        );
+      });
+  </script>
+</body>
+</html>
